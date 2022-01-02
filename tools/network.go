@@ -13,19 +13,25 @@ import (
 )
 
 // Get : Get values thru HTTP Get
-func Get(url string) string {
+func Get(url string) (string, error) {
 	log.Debugf("Request: %s\n", url)
 	res, err := http.Get(url)
 	if err != nil {
 		log.Error(err)
+		return "", err
 	}
 	content, err := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
 		log.Error(err)
+		return "", err
 	}
 	log.Debugf("Response: " + string(content))
-	return string(content)
+	if res.StatusCode != 200 && res.StatusCode != 201 {
+		err := fmt.Errorf("%d", res.StatusCode)
+		return string(content), err
+	}
+	return string(content), nil
 }
 
 // PostForm : PostForm values thru HTTP PostForm
