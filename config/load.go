@@ -14,7 +14,7 @@ import (
 	logger "github.com/sirupsen/logrus"
 )
 
-func LoadEnv() error {
+func LoadEnv(name string) error {
 	path, err := os.UserHomeDir()
 	if err != nil {
 		logger.Errorf("Error with Loading Env %s", err.Error())
@@ -22,7 +22,7 @@ func LoadEnv() error {
 		return err
 	}
 	// loads values from .env into the system
-	name := "/.lintasarta/config-dbaas.env"
+	// name := "/.lintasarta/config-dbaas.env"
 	if err := godotenv.Load(path + name); err != nil {
 		logger.Errorf("No .env file in %s called %s. Application dismissed", path, name)
 		err := fmt.Errorf("no .env file in %s called %s. application dismissed", path, name)
