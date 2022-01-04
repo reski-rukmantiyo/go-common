@@ -25,12 +25,27 @@ func NewDatabase(username, password, host, port, name string) *DB {
 		port:     port,
 		name:     name,
 	}
+	db.Client, db.Err = db.getClient()
+	return db
+}
+
+func (db *DB) getClient() (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
-		host, username, password, name, port)
+		db.host, db.username, db.password, db.name, db.port)
 	client, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		db.Err = err
+		return nil, err
 	}
-	db.Client = client
-	return db
+	return client, err
+}
+
+func (db *DB) Error() bool {
+	if db.Client != nil {
+		return false
+	}
+	if db.Err != nil || db.Client == nil {
+		db.Client, db.Err = db.getClient()
+		return true
+	}
+	return false
 }
