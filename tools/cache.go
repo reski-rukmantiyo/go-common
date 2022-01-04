@@ -15,29 +15,44 @@ type Cache struct {
 	server   string
 	password string
 	db       int
+	err      error
 }
 
-func NewCache(server, password string, db int) (*Cache, error) {
-	rdb := redis.NewClient(&redis.Options{
+func getClient(ctx context.Context, server, password string, db int) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
 		Addr:     server,
 		Password: password, // no password set
 		DB:       db,       // use default DB
 	})
+	cacheStatus := client.Ping(ctx)
+	if err := cacheStatus.Err(); err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+func NewCache(server, password string, db int) *Cache {
+	ctx := context.Background()
+	rdb, err := getClient(ctx, server, password, db)
 	cache := &Cache{
 		client:   rdb,
 		server:   server,
 		password: password,
 		db:       db,
+		err:      err,
 	}
-	ctx := context.Background()
-	cacheStatus := cache.client.Ping(ctx)
-	if err := cacheStatus.Err(); err != nil {
-		return nil, err
-	}
-	return cache, nil
+	return cache
 }
 
 func (cache *Cache) Get(key string) (string, error) {
+	ctx := context.Background()
+	if cache.err != nil {
+		client, err := getClient(ctx, cache.server, cache.password, cache.db)
+		if err != nil {
+			return "", err
+		}
+		cache.client = client
+	}
 	val, err := cache.client.Get(ctx, key).Result()
 	if err != nil {
 		err := fmt.Errorf("empty result for cache %s:%s", key, err.Error())
@@ -47,7 +62,15 @@ func (cache *Cache) Get(key string) (string, error) {
 }
 
 func (cache *Cache) SetWithTime(key, value string, expiredInSeconds int64, params ...int) error {
-	duration := time.Duration(expiredInSeconds)
+	ctx := context.Background()
+	if cache.err != nil {
+		client, err := getClient(ctx, cache.server, cache.password, cache.db)
+		if err != nil {
+			return err
+		}
+		cache.client = client
+	}
+	duration := time.Duration(expiredInSeconds * int64(time.Second))
 	err := cache.client.Set(ctx, key, value, duration).Err()
 	if err != nil {
 		err := fmt.Errorf("Cache Set %s-%s:%s", key, value, err.Error())
@@ -57,6 +80,14 @@ func (cache *Cache) SetWithTime(key, value string, expiredInSeconds int64, param
 }
 
 func (cache *Cache) Set(key, value string, params ...int) error {
+	ctx := context.Background()
+	if cache.err != nil {
+		client, err := getClient(ctx, cache.server, cache.password, cache.db)
+		if err != nil {
+			return err
+		}
+		cache.client = client
+	}
 	err := cache.client.Set(ctx, key, value, 0).Err()
 	if err != nil {
 		err := fmt.Errorf("Cache Set %s-%s:%s", key, value, err.Error())
