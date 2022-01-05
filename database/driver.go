@@ -30,7 +30,7 @@ func NewDatabase(username, password, host, port, name string) *DB {
 }
 
 func (db *DB) getClient() (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta connect_timeout=5",
 		db.host, db.username, db.password, db.name, db.port)
 	client, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
