@@ -14,6 +14,16 @@ import (
 	logger "github.com/sirupsen/logrus"
 )
 
+func GetPath() (string, error) {
+	path, err := os.UserHomeDir()
+	if err != nil {
+		logger.Errorf("Error with Loading Env %s", err.Error())
+		err := fmt.Errorf("error with loading env", err.Error())
+		return "", err
+	}
+	return path, nil
+}
+
 func LoadEnv(name string) error {
 	path, err := os.UserHomeDir()
 	if err != nil {
