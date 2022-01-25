@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	logger "github.com/sirupsen/logrus"
 )
 
 var ctx = context.Background()
@@ -91,6 +92,24 @@ func (cache *Cache) Set(key, value string, params ...int) error {
 	err := cache.client.Set(ctx, key, value, 0).Err()
 	if err != nil {
 		err := fmt.Errorf("Cache Set %s-%s:%s", key, value, err.Error())
+		return err
+	}
+	return nil
+}
+
+func (cache *Cache) Delete(key string, params ...int) error {
+	ctx := context.Background()
+	if cache.err != nil {
+		client, err := getClient(ctx, cache.server, cache.password, cache.db)
+		if err != nil {
+			return err
+		}
+		cache.client = client
+	}
+	cmd := cache.client.Del(ctx, key)
+	if cmd.Err() != nil {
+		logger.Errorf("Cache Delete %s:%s", key, cmd.Err().Error())
+		err := fmt.Errorf("Cache Delete %s:%s", key, cmd.Err().Error())
 		return err
 	}
 	return nil
