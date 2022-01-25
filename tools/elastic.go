@@ -2,15 +2,21 @@ package tools
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
+	"github.com/reski-rukmantiyo/go-common/config"
 	logger "github.com/sirupsen/logrus"
 )
 
@@ -42,6 +48,24 @@ type ES struct {
 	client   *elastic.Client
 	err      error
 	name     string
+	caFile   string
+}
+
+func NewLogWithCA(hosts, name, username, password, caFile string) *ES {
+	es := ES{
+		hosts:    hosts,
+		name:     name,
+		username: username,
+		password: password,
+		caFile:   caFile,
+	}
+	client, err := es.getESClient()
+	if err != nil {
+		client = nil
+		es.err = err
+	}
+	es.client = client
+	return &es
 }
 
 func NewLog(hosts, name, username, password string) *ES {
@@ -64,7 +88,57 @@ func (es *ES) getESClient() (*elastic.Client, error) {
 	hosts := strings.Split(es.hosts, ",")
 	var client *elastic.Client
 	var err error
-	if es.username != "" && es.password != "" {
+	if es.caFile != "" && es.username != "" && es.password != "" {
+		// Get the SystemCertPool, continue with an empty pool on error
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+		// Read in the cert file
+		path, err := config.GetPath()
+		if err != nil {
+			return nil, err
+		}
+		certs, err := ioutil.ReadFile(path + es.caFile)
+		if err != nil {
+			log.Fatalf("Failed to append %q to RootCAs: %v", es.caFile, err)
+		}
+		// Append our cert to the system pool
+		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+			log.Println("No certs appended, using system certs only")
+		}
+		// Trust the augmented cert pool in our client
+		tlsConfig := &tls.Config{
+			RootCAs: rootCAs,
+		}
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout: 5 * time.Second,
+			}).Dial,
+			TLSClientConfig:     tlsConfig,
+			TLSHandshakeTimeout: 5 * time.Second,
+		}
+		httpClient := &http.Client{
+			Transport: transport,
+			Timeout:   time.Second * 10,
+		}
+		client, err = elastic.NewClient(
+			elastic.SetURL(hosts...),
+			elastic.SetSniff(false),
+			elastic.SetHealthcheckInterval(10*time.Second),
+			elastic.SetMaxRetries(5),
+			elastic.SetErrorLog(log.New(os.Stderr, "ES Error: ", log.LstdFlags)),
+			elastic.SetInfoLog(log.New(os.Stdout, "ES Info: ", log.LstdFlags)),
+			elastic.SetHttpClient(httpClient),
+			elastic.SetBasicAuth(es.username, es.password),
+		)
+		if err != nil {
+			// client = nil
+			es.err = err
+			return nil, err
+		}
+	} else if es.username != "" && es.password != "" {
 		client, err = elastic.NewClient(
 			elastic.SetURL(hosts...),
 			elastic.SetSniff(false),
@@ -73,6 +147,55 @@ func (es *ES) getESClient() (*elastic.Client, error) {
 			elastic.SetErrorLog(log.New(os.Stderr, "ES Error: ", log.LstdFlags)),
 			elastic.SetInfoLog(log.New(os.Stdout, "ES Info: ", log.LstdFlags)),
 			elastic.SetBasicAuth(es.username, es.password),
+		)
+		if err != nil {
+			// client = nil
+			es.err = err
+			return nil, err
+		}
+	} else if es.caFile != "" {
+		// Get the SystemCertPool, continue with an empty pool on error
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+		// Read in the cert file
+		path, err := config.GetPath()
+		if err != nil {
+			return nil, err
+		}
+		certs, err := ioutil.ReadFile(path + es.caFile)
+		if err != nil {
+			log.Fatalf("Failed to append %q to RootCAs: %v", es.caFile, err)
+		}
+		// Append our cert to the system pool
+		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+			log.Println("No certs appended, using system certs only")
+		}
+		// Trust the augmented cert pool in our client
+		tlsConfig := &tls.Config{
+			RootCAs: rootCAs,
+		}
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout: 5 * time.Second,
+			}).Dial,
+			TLSClientConfig:     tlsConfig,
+			TLSHandshakeTimeout: 5 * time.Second,
+		}
+		httpClient := &http.Client{
+			Transport: transport,
+			Timeout:   time.Second * 10,
+		}
+		client, err = elastic.NewClient(
+			elastic.SetURL(hosts...),
+			elastic.SetSniff(false),
+			elastic.SetHealthcheckInterval(10*time.Second),
+			elastic.SetMaxRetries(5),
+			elastic.SetErrorLog(log.New(os.Stderr, "ES Error: ", log.LstdFlags)),
+			elastic.SetInfoLog(log.New(os.Stdout, "ES Info: ", log.LstdFlags)),
+			elastic.SetHttpClient(httpClient),
 		)
 		if err != nil {
 			// client = nil
