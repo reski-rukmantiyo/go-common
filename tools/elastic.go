@@ -275,7 +275,7 @@ func (es *ES) writeLog(id, key, request, info, message, response string) error {
 		},
 		Level:           info,
 		Message:         message,
-		MessageTemplate: "{Apps}{Key}{Value}{Id}",
+		MessageTemplate: "{Apps}{ID}{Key}{Request}{Response}",
 		Timestamp:       time.Now(),
 	}
 
