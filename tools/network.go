@@ -36,39 +36,37 @@ func Get(url string) (string, error) {
 
 // PostForm : PostForm values thru HTTP PostForm
 func PostJSON(url string, data []byte, uniqueID string) (string, error) {
+	log.SetReportCaller(true)
 	log.Debugf("Request: %s\n", url)
-	// tr := &http.Transport{
-	// 	TLSClientConfig: &tls.Config{
-	// 		InsecureSkipVerify: true,
-	// 	},
-	// }
-	client := &http.Client{
-		// Transport: tr,
-	}
+	client := &http.Client{}
 	r, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
-		// WriteErrorLog(uniqueID, "PostJSON", fmt.Sprintf("Request: %s|Response: %s", string(data), err.Error()), "")
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
 		return "", err
 	}
 	r.Header.Add("Content-Type", "application/json")
-	// r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-
 	res, err := client.Do(r)
 	if err != nil {
-		// WriteErrorLog(uniqueID, "PostJSON", fmt.Sprintf("Request: %s|Response: %s", string(data), err.Error()), "")
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
 		return "", err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		// WriteErrorLog(uniqueID, "PostJSON", fmt.Sprintf("Request: %s|Response: %s", string(data), err.Error()), "")
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
 		return "", err
 	}
 	log.Debugf("Response: " + string(body))
 	if res.StatusCode != 200 && res.StatusCode != 201 {
+		log.Debugf("Error : ", err.Error())
 		err := fmt.Errorf("%d", res.StatusCode)
+		log.SetReportCaller(false)
 		return string(body), err
 	}
+	log.SetReportCaller(false)
 	return string(body), nil
 }
 
