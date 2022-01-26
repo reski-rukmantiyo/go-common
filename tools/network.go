@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -35,9 +36,14 @@ func Get(url string) (string, error) {
 }
 
 // PostForm : PostForm values thru HTTP PostForm
-func PostJSON(url string, data []byte, uniqueID string) (string, error) {
+func PostJSON(url string, data []byte, uniqueID string, options ...string) (string, error) {
 	log.SetReportCaller(true)
 	log.Debugf("Request: %s\n", url)
+	if options[0] == "true" {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	} else {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
+	}
 	client := &http.Client{}
 	r, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
