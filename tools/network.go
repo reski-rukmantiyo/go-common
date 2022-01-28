@@ -13,6 +13,48 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// GetWithHeader : Get values thru HTTP Get
+// 1st Option = JSON or not
+func GetWithHeader(url string, headers map[string]string, options ...string) (string, error) {
+	log.SetReportCaller(true)
+	log.Debugf("Request: %s\n", url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	if strings.ToLower(options[0]) == "json" {
+		req.Header.Add("Content-Type", "application/json")
+	}
+	if err != nil {
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
+		return "", err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
+		return "", err
+	}
+	content, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
+		return "", err
+	}
+	log.Debugf("Response: " + string(content))
+	if res.StatusCode != 200 && res.StatusCode != 201 {
+		err := fmt.Errorf("%d", res.StatusCode)
+		log.Debugf("Error : ", err.Error())
+		log.SetReportCaller(false)
+		return string(content), err
+	}
+	log.SetReportCaller(false)
+	return string(content), nil
+}
+
 // Get : Get values thru HTTP Get
 func Get(url string) (string, error) {
 	log.Debugf("Request: %s\n", url)
