@@ -13,9 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetWithHeader : Get values thru HTTP Get
+// GetWithHeaders : Get values thru HTTP Get
 // 1st Option = JSON or not
-func GetWithHeader(url string, headers map[string]string, options ...string) (string, error) {
+func GetWithHeaders(url string, headers map[string]string, options ...string) (string, error) {
 	log.SetReportCaller(true)
 	log.Debugf("Request: %s\n", url)
 	client := &http.Client{}
