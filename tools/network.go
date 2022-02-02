@@ -109,7 +109,7 @@ func PostJSON(url string, data []byte, uniqueID string, options ...string) (stri
 	}
 	log.Debugf("Response: " + string(body))
 	if res.StatusCode != 200 && res.StatusCode != 201 {
-		log.Debugf("Error : ", err.Error())
+		log.Debugf("Error Response Code : ", res.StatusCode)
 		err := fmt.Errorf("%d", res.StatusCode)
 		log.SetReportCaller(false)
 		return string(body), err
