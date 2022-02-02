@@ -47,7 +47,7 @@ func GetWithHeaders(url string, headers map[string]string, options ...string) (s
 	log.Debugf("Response: " + string(content))
 	if res.StatusCode != 200 && res.StatusCode != 201 {
 		err := fmt.Errorf("%d", res.StatusCode)
-		log.Debugf("Error : ", err.Error())
+		log.Debugf("Error Response Code : ", res.StatusCode)
 		log.SetReportCaller(false)
 		return string(content), err
 	}
