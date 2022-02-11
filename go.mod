@@ -8,6 +8,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/olivere/elastic/v7 v7.0.30
 	github.com/sirupsen/logrus v1.8.1
+	github.com/tealeg/xlsx/v3 v3.2.4
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/gorm v1.22.4
 )
