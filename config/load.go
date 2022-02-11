@@ -18,27 +18,36 @@ func GetPath() (string, error) {
 	path, err := os.UserHomeDir()
 	if err != nil {
 		logger.Errorf("Error with Loading Env %s", err.Error())
-		err := fmt.Errorf("error with loading env", err.Error())
+		err := fmt.Errorf("error with loading env : %s", err.Error())
 		return "", err
 	}
 	return path, nil
 }
 
-func LoadEnv(name string) error {
+func LoadEnv(name string, args ...bool) error {
 	path, err := os.UserHomeDir()
 	if err != nil {
 		logger.Errorf("Error with Loading Env %s", err.Error())
-		err := fmt.Errorf("error with loading env", err.Error())
+		err := fmt.Errorf("error with loading env : %s", err.Error())
 		return err
 	}
-	// loads values from .env into the system
-	// name := "/.lintasarta/config-dbaas.env"
-	if err := godotenv.Load(path + name); err != nil {
-		logger.Errorf("No .env file in %s called %s. Application dismissed", path, name)
-		err := fmt.Errorf("no .env file in %s called %s. application dismissed", path, name)
-		return err
+	if !args[0] {
+		// loads values from .env into the system
+		if err := godotenv.Load(path + name); err != nil {
+			logger.Errorf("No .env file in %s called %s. Application dismissed", path, name)
+			err := fmt.Errorf("no .env file in %s called %s. application dismissed", path, name)
+			return err
+		}
+		return nil
+	} else {
+		// loads values from .env into the system
+		if err := godotenv.Load(name); err != nil {
+			logger.Errorf("No .env file in %s called %s. Application dismissed", path, name)
+			err := fmt.Errorf("no .env file in %s called %s. application dismissed", path, name)
+			return err
+		}
+		return nil
 	}
-	return nil
 }
 
 // GetEnv : Simple helper function to read an environment or return a default value
