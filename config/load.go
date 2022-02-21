@@ -31,7 +31,8 @@ func LoadEnv(name string, args ...bool) error {
 		err := fmt.Errorf("error with loading env : %s", err.Error())
 		return err
 	}
-	if !args[0] {
+	length := len(args)
+	if length > 0 && !args[0] {
 		// loads values from .env into the system
 		if err := godotenv.Load(path + name); err != nil {
 			logger.Errorf("No .env file in %s called %s. Application dismissed", path, name)
