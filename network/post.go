@@ -17,6 +17,11 @@ import (
 func PostForm(url string, data url.Values, headers map[string]string, options ...string) (string, error) {
 	log.Debugf("Request: %s\n", url)
 	client := &http.Client{}
+	if len(options) != 0 && options[0] == "true" {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	} else {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
+	}
 	r, err := http.NewRequest("POST", url, strings.NewReader(data.Encode())) // URL-encoded payload
 	if err != nil {
 		log.Error(err)
@@ -48,7 +53,7 @@ func PostForm(url string, data url.Values, headers map[string]string, options ..
 }
 
 // PostForm : PostForm values thru HTTP PostForm
-func PostJSON(url string, data []byte, uniqueID string, options ...string) (string, error) {
+func PostJSON(url string, data []byte, headers map[string]string, uniqueID string, options ...string) (string, error) {
 	log.SetReportCaller(true)
 	log.Debugf("Request: %s\n", url)
 	if options[0] == "true" {
@@ -64,6 +69,9 @@ func PostJSON(url string, data []byte, uniqueID string, options ...string) (stri
 		return "", err
 	}
 	r.Header.Add("Content-Type", "application/json")
+	for key, value := range headers {
+		r.Header.Add(key, value)
+	}
 	res, err := client.Do(r)
 	if err != nil {
 		log.Debugf("Error : ", err.Error())

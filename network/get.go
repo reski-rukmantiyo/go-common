@@ -1,6 +1,7 @@
 package network
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 
@@ -20,10 +21,18 @@ func GetWithHeaders(url string, headers map[string]string, options ...string) (s
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	for key, value := range headers {
-		req.Header.Add(key, value)
+		//req.Header.Add(key, value)
+		req.Header[key] = []string{value}
 	}
-	if strings.ToLower(options[0]) == "json" {
+	if len(options) >= 1 && strings.ToLower(options[0]) == "json" {
 		req.Header.Add("Content-Type", "application/json")
+	} else {
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	}
+	if len(options) >= 1 && options[1] == "true" {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	} else {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
 	}
 	if err != nil {
 		log.Debugf("Error : ", err.Error())
