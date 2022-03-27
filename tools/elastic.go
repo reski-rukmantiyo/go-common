@@ -281,6 +281,10 @@ func (es *ES) writeLog(id, key, request, info, message, response string) error {
 
 	ctx := context.Background()
 	esclient := es.client
+	if esclient == nil {
+		err := fmt.Errorf("elasticsearch client is empty")
+		return err
+	}
 	dataJSON, err := json.Marshal(appLog)
 	if err != nil {
 		err := fmt.Errorf("WriteLog: %s\n", err.Error())
